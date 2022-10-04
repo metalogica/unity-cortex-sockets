@@ -3,7 +3,7 @@ using NativeWebSocket;
 
 public enum State
 {
-  SessionAbsent,
+  NoSession,
   SessionAuthorized,
   SessionActivated,
   SessionStreaming
@@ -19,7 +19,7 @@ public class WebSocketConnection : MonoBehaviour {
   string sessionId;
   int debit;
   bool receivedCortexToken;
-  State state = State.SessionAbsent;
+  State state = State.NoSession;
 
   async void Start()
   {
@@ -27,7 +27,7 @@ public class WebSocketConnection : MonoBehaviour {
 
     websocket.OnOpen += () => 
     {
-      if (state == State.SessionAbsent)
+      if (state == State.NoSession)
       {
         if (HasCorrectConfig())
         {
