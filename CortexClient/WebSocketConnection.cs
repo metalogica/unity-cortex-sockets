@@ -30,11 +30,10 @@ public class WebSocketConnection : MonoBehaviour {
     {
       if (state == State.SessionInactive)
       {
-        if (HasCorrectConfig())
+        if (HasValidConfig())
         {
           if (ShouldSearchForExistingSession())
           {
-            
             string message = new Request.ActivateSession(
               "method test",
               new Request.ActivateSession.Params(
@@ -99,7 +98,7 @@ public class WebSocketConnection : MonoBehaviour {
     websocket.DispatchMessageQueue();
   }
 
-  bool HasCorrectConfig()
+  bool HasValidConfig()
   {
     bool clientIdExists = this.clientId.Length > 0;
     bool clientSecretExists = this.clientSecret.Length > 0;
