@@ -3,12 +3,11 @@ using NativeWebSocket;
 
 public enum State
 {
-  NoSession,
-  SessionAvailable,
-  SessionUnavailable,
+  SessionInactive,
   SessionAuthorized,
-  SessionActivated,
-  SessionStreaming
+  SessionCreated,
+  SessionActive,
+  SessionStreamingMentalCommand,
 }
 
 public class WebSocketConnection : MonoBehaviour {
@@ -17,11 +16,11 @@ public class WebSocketConnection : MonoBehaviour {
   [SerializeField] string clientSecret = "";
   [SerializeField] string headset = "";
   [SerializeField] string cortexServerUrl = "wss://localhost:6868";
-  string cortexToken = "";
-  string sessionId = "";
+  string cortexToken = "temp";
+  string sessionId = "temp";
   int debit;
   bool receivedCortexToken;
-  State state = State.NoSession;
+  State state = State.SessionInactive;
 
   async void Start()
   {
@@ -29,13 +28,24 @@ public class WebSocketConnection : MonoBehaviour {
 
     websocket.OnOpen += () => 
     {
-      if (state == State.NoSession)
+      if (state == State.SessionInactive)
       {
         if (HasCorrectConfig())
         {
-          if (CanQueryExistingSession())
+          if (ShouldSearchForExistingSession())
           {
-            Debug.Log("HIT"); 
+            
+            string message = new Request.ActivateSession(
+              "method test",
+              new Request.ActivateSession.Params(
+                "some cortex token",
+                "some session id"
+              )
+            ).SaveToString();
+
+            Debug.Log(message);
+          } else {
+            // RequestNewSessiontoken();
           }
         }
         else 
@@ -98,7 +108,7 @@ public class WebSocketConnection : MonoBehaviour {
     return clientIdExists && clientSecretExists && headsetExists;
   }
 
-  bool CanQueryExistingSession()
+  bool ShouldSearchForExistingSession()
   {
     bool sessionIdExists = this.sessionId.Length > 0;
     bool cortexTokenExists = this.cortexToken.Length > 0;
@@ -145,8 +155,6 @@ public class WebSocketConnection : MonoBehaviour {
   {
     await websocket.Close();
   }
-
-
   private void HandleGetUserResponse(string messageString)
   {
       CortexEvent cortexEvent = CortexEvent.CreateFromJSON(messageString);

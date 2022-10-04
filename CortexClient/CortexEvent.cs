@@ -1,14 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public enum CortexState
-{
-  SessionClosed,
-  SessionAuthorized,
-  SessionActivated,
-  SessionStreaming
-}
-
 [System.Serializable]
 public class CortexEvent {
   public string id;
@@ -153,4 +145,56 @@ public class CortexEvent {
       public string cortexToken;
     }
   }
+}
+
+// Started again.... START HERE
+public class RequestMethods
+{
+  public string Authorize = "authorize";
+}
+
+[System.Serializable]
+public class Request
+{
+  public int id = 1;
+  public string jsonrpc = "2.0";
+  public string method;
+
+  public string SaveToString()
+  {
+    return JsonUtility.ToJson(this);
+  }
+
+  [System.Serializable]
+  public class ActivateSession : Request {
+    public Params @params;
+    
+    public ActivateSession(string method, Params param)
+    {
+      this.method = method;
+      this.@params = param;
+    }
+
+    [System.Serializable]
+    public class Params 
+    {
+      public string cortexToken;
+      public string sessionId;
+      public Params(string cortexToken, string sessionId)
+      {
+        this.cortexToken = cortexToken;
+        this.sessionId = sessionId;
+      }
+    }
+  }
+
+  public class AuthorizeSession : Request {
+
+  }
+
+  public class CreateSession : Request {}
+
+  public class StreamMentalCommand : Request {}
+
+  public class CloseSession : Request {}
 }
