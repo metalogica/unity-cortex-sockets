@@ -4,6 +4,8 @@ using NativeWebSocket;
 public enum State
 {
   NoSession,
+  SessionAvailable,
+  SessionUnavailable,
   SessionAuthorized,
   SessionActivated,
   SessionStreaming
@@ -15,8 +17,8 @@ public class WebSocketConnection : MonoBehaviour {
   [SerializeField] string clientSecret = "";
   [SerializeField] string headset = "";
   [SerializeField] string cortexServerUrl = "wss://localhost:6868";
-  string cortexToken;
-  string sessionId;
+  string cortexToken = "";
+  string sessionId = "";
   int debit;
   bool receivedCortexToken;
   State state = State.NoSession;
@@ -31,7 +33,10 @@ public class WebSocketConnection : MonoBehaviour {
       {
         if (HasCorrectConfig())
         {
-          Debug.Log("read to rock n roll!");
+          if (CanQueryExistingSession())
+          {
+            Debug.Log("HIT"); 
+          }
         }
         else 
         {
@@ -44,7 +49,7 @@ public class WebSocketConnection : MonoBehaviour {
     {
       Debug.Log(
         "Connection Error! Please double check your URL and ensure the cortex API is running"
-        + "URL: " + this.cortexServerUrl
+        + "URL: " + this.cortexServerUrl + " " 
         + "Error: " + error
       );
     };
@@ -86,11 +91,19 @@ public class WebSocketConnection : MonoBehaviour {
 
   bool HasCorrectConfig()
   {
-    bool clientId = this.clientId.Length > 0;
-    bool clientSecret = this.clientSecret.Length > 0;
-    bool headset = this.headset.Length > 0;
+    bool clientIdExists = this.clientId.Length > 0;
+    bool clientSecretExists = this.clientSecret.Length > 0;
+    bool headsetExists = this.headset.Length > 0;
 
-    return clientId && clientSecret && headset;
+    return clientIdExists && clientSecretExists && headsetExists;
+  }
+
+  bool CanQueryExistingSession()
+  {
+    bool sessionIdExists = this.sessionId.Length > 0;
+    bool cortexTokenExists = this.cortexToken.Length > 0;
+
+    return sessionIdExists && cortexTokenExists;
   }
 
   async void SendWebSocketMessage()
