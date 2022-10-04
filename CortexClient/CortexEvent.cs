@@ -1,6 +1,14 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+public enum CortexState
+{
+  SessionClosed,
+  SessionAuthorized,
+  SessionActivated,
+  SessionStreaming
+}
+
 [System.Serializable]
 public class CortexEvent {
   public string id;
@@ -58,43 +66,91 @@ public class CortexEvent {
   [System.Serializable]
   public class CreateSessionEvent
   {
-    public string cortexToken;
-    public string headset;
-    public string status;
+    public int id;
+    public string jsonrpc;
+    public string method;
+    public Params @params;
+
+    [System.Serializable]
+    public class Params
+    {
+      public string cortexToken;
+      public string headset;
+      public string status;
+    }
+  }
+
+  [System.Serializable]
+  public class SessionCreatedEvent
+  {
+    public int id;
+    public string jsonrpc;
+    public Result result;
+
+    [System.Serializable]
+    public class Result
+    {
+      public string id;
+      public string status;
+      public string appId;
+      public Headset headset;
+      public string license;
+      public string owner;
+      public List<PerformanceMetric> performanceMetrics;
+      public List<object> recordIds;
+      public bool recording;
+      public string started;
+      public string stopped;
+      public List<object> streams;
+    }
+
+    [System.Serializable]
+    public class Settings 
+    {
+      public int eegRate;
+      public int eegRes;
+      public int memsRate;
+      public int memsRes;
+      public string mode;
+    }
+
+    [System.Serializable]
+    public class Headset 
+    {
+      public string connectedBy;
+      public List<string> dfuTypes;
+      public string dongle;
+      public string firmware;
+      public string id;
+      public bool isDfuMode;
+      public bool isVirtual;
+      public List<string> motionSensors;
+      public List<string> sensors;
+      public Settings settings;
+      public string status;
+      public string virtualHeadsetId;
+    }
+    public class PerformanceMetric
+    {
+      public string apiName;
+      public string displayName;
+      public string name;
+      public string shortDispalyName;
+    }
+  }
+
+  [System.Serializable]
+  public class QuerySessionRequest
+  {
+    public int id;
+    public string jsonrpc;
+    public string method;
+    public Params @params;
+
+    [System.Serializable]
+    public class Params 
+    {
+      public string cortexToken;
+    }
   }
 }
-
-// public static class JsonHelper
-// {
-//     public static T[] FromJson<T>(string json)
-//     {
-//         Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>>(json);
-//         return wrapper.Items;
-//     }
-
-//     public static string fixJson(string value)
-//     {
-//       value = "{\"Items\" :" + value + "}";
-//       return value;
-//     }
-
-//     public static string ToJson<T>(T[] array)
-//     {
-//         Wrapper<T> wrapper = new Wrapper<T>();
-//         wrapper.Items = array;
-//         return JsonUtility.ToJson(wrapper);
-//     }
-
-//     public static string ToJson<T>(T[] array, bool prettyPrint)
-//     {
-//         Wrapper<T> wrapper = new Wrapper<T>();
-//         wrapper.Items = array;
-//         return JsonUtility.ToJson(wrapper, prettyPrint);
-//     }
-
-//     [System.Serializable]
-//     private class Wrapper<T>
-//     {
-//         public T[] Items;
-//     }
-// }
