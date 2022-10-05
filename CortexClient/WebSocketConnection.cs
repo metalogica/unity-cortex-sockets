@@ -28,29 +28,26 @@ public class WebSocketConnection : MonoBehaviour {
 
     websocket.OnOpen += () => 
     {
-      if (state == State.SessionInactive)
+      if (!HasValidConfig())
       {
-        if (HasValidConfig())
-        {
-          if (ShouldSearchForExistingSession())
-          {
-            string message = new Request.ActivateSession(
-              "method test",
-              new Request.ActivateSession.Params(
-                "some cortex token",
-                "some session id"
-              )
-            ).SaveToString();
+        Debug.LogError("Missing credentials: Please ensure you have the correct configuration.");
+        
+        return;
+      }
+      
+      if (ShouldSearchForExistingSession())
+      {
+        string message = new Request.ActivateSession(
+          "method test",
+          new Request.ActivateSession.Params(
+            "some cortex token",
+            "some session id"
+          )
+        ).SaveToString();
 
-            Debug.Log(message);
-          } else {
-            // RequestNewSessiontoken();
-          }
-        }
-        else 
-        {
-          Debug.LogError("Missing credentials: Please ensure you have the correct configuration.");
-        }
+        Debug.Log(message);
+      } else {
+        // RequestNewSessiontoken();
       }
     };
 
