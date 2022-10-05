@@ -34,7 +34,7 @@ public class WebSocketConnection : MonoBehaviour {
         
         return;
       }
-      
+
       if (ShouldSearchForExistingSession())
       {
         string message = new Request.ActivateSession(
@@ -53,7 +53,7 @@ public class WebSocketConnection : MonoBehaviour {
 
     websocket.OnError += (error) =>
     {
-      Debug.Log(
+      Debug.LogError(
         "Connection Error! Please double check your URL and ensure the cortex API is running"
         + "URL: " + this.cortexServerUrl + " " 
         + "Error: " + error
