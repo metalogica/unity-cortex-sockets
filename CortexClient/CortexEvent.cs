@@ -150,7 +150,8 @@ public class CortexEvent {
 // Started again.... START HERE
 public class RequestMethods
 {
-  public string Authorize = "authorize";
+  public static string AuthorizeSession = "authorize";
+  public static string QuerySession = "querySessions";
 }
 
 [System.Serializable]
@@ -166,10 +167,54 @@ public class Request
   }
 
   [System.Serializable]
-  public class ActivateSession : Request {
+  public class QuerySession : Request {
     public Params @params;
     
-    public ActivateSession(string method, Params param)
+    public QuerySession(string method, Params param)
+    {
+      this.method = method;
+      this.@params = param;
+    }
+
+    [System.Serializable]
+    public class Params 
+    {
+      public string cortexToken;
+      public Params(string cortexToken)
+      {
+        this.cortexToken = cortexToken;
+      }
+    }
+  }
+
+  [System.Serializable]
+  public class AuthorizeSession : Request {
+    public Params @params;
+
+    public AuthorizeSession(string method, Params param)
+    {
+      this.method = method;
+      this.@params = param;
+    }
+
+    [System.Serializable]
+    public class Params
+    {
+      public string clientId;
+      public string clientSecret;
+
+      public Params(string clientId, string clientSecret)
+      {
+        this.clientId = clientId;
+        this.clientSecret = clientSecret;
+      }
+    }
+  }
+
+  public class CreateSession : Request {
+    public Params @params;
+    
+    public CreateSession(string method, Params param)
     {
       this.method = method;
       this.@params = param;
@@ -187,12 +232,6 @@ public class Request
       }
     }
   }
-
-  public class AuthorizeSession : Request {
-
-  }
-
-  public class CreateSession : Request {}
 
   public class StreamMentalCommand : Request {}
 

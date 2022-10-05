@@ -1,13 +1,12 @@
 using UnityEngine;
 using NativeWebSocket;
 
-public enum State
+public enum SessionState
 {
-  SessionInactive,
-  SessionAuthorized,
-  SessionCreated,
-  SessionActive,
-  SessionStreamingMentalCommand,
+  Inactive,
+  AuthorizionTokenReceived,
+  Activated,
+  StreamingMentalCommand,
 }
 
 public class WebSocketConnection : MonoBehaviour {
@@ -16,17 +15,17 @@ public class WebSocketConnection : MonoBehaviour {
   [SerializeField] string clientSecret = "";
   [SerializeField] string headset = "";
   [SerializeField] string cortexServerUrl = "wss://localhost:6868";
-  string cortexToken = "temp";
-  string sessionId = "temp";
+  string cortexToken = "";
+  string sessionId = "";
   int debit;
   bool receivedCortexToken;
-  State state = State.SessionInactive;
+  SessionState sessionState = SessionState.Inactive;
 
   async void Start()
   {
     websocket = new WebSocket(this.cortexServerUrl);
 
-    websocket.OnOpen += () => 
+    websocket.OnOpen += async () => 
     {
       if (!HasValidConfig())
       {
@@ -35,20 +34,15 @@ public class WebSocketConnection : MonoBehaviour {
         return;
       }
 
-      if (ShouldSearchForExistingSession())
-      {
-        string message = new Request.ActivateSession(
-          "method test",
-          new Request.ActivateSession.Params(
-            "some cortex token",
-            "some session id"
-          )
-        ).SaveToString();
+      string message = new Request.AuthorizeSession(
+        RequestMethods.AuthorizeSession,
+        new Request.AuthorizeSession.Params(
+          this.clientId,
+          this.clientSecret
+        )
+      ).SaveToString();
 
-        Debug.Log(message);
-      } else {
-        // RequestNewSessiontoken();
-      }
+      await websocket.SendText(message);
     };
 
     websocket.OnError += (error) =>
@@ -65,29 +59,56 @@ public class WebSocketConnection : MonoBehaviour {
       Debug.Log("Connection closed!");
     };
 
-    websocket.OnMessage += (bytes) =>
+    websocket.OnMessage += (bytes) => 
     {
-      Debug.Log("CONIFG: Debit is: "+this.debit+"cortex token is: "+this.cortexToken+"sessionId is: "+this.sessionId);
-      Debug.Log("Message received");
-      string message;
-      var messageString = System.Text.Encoding.UTF8.GetString(bytes);
+      var input = System.Text.Encoding.UTF8.GetString(bytes);
+      Debug.Log("[Websocket.OnMessage] Recieved raw input" + input);
 
-      if (debit >= 1 && sessionId == "")
+      if (this.sessionState == SessionState.Inactive)
       {
-        message = HandleGetSessionToken(messageString);
-        Debug.Log("Message received details: " + message);
+        this.sessionState = SessionState.AuthorizionTokenReceived;
+
+        string message = new Request.QuerySession(
+          RequestMethods.QuerySession,
+          new Request.QuerySession.Params(
+            this.cortexToken
+          )
+        ).SaveToString();
+
+        Debug.Log("[Websocket.OnMessage] Constructed Message: " + message);
+
+        return;
       }
 
-      if (receivedCortexToken)
+      if (ShouldActivateSession())
       {
-        message = HandleSessionCreatedEvent(messageString);
-        Debug.Log("Message received details: " + message);
+        // 
       }
     };
+    
+    await websocket.Connect();
+    // websocket.OnMessage += (bytes) =>
+    // {
+    //   Debug.Log("CONIFG: Debit is: "+this.debit+"cortex token is: "+this.cortexToken+"sessionId is: "+this.sessionId);
+    //   Debug.Log("Message received");
+    //   string message;
+    //   var messageString = System.Text.Encoding.UTF8.GetString(bytes);
+
+    //   if (debit >= 1 && sessionId == "")
+    //   {
+    //     message = HandleGetSessionToken(messageString);
+    //     Debug.Log("Message received details: " + message);
+    //   }
+
+    //   if (receivedCortexToken)
+    //   {
+    //     message = HandleSessionCreatedEvent(messageString);
+    //     Debug.Log("Message received details: " + message);
+    //   }
+    // };
 
     // InvokeRepeating("SendWebSocketMessage", 0.0f, 2.5f);
 
-    await websocket.Connect();
   }
 
   void Update()
@@ -104,7 +125,7 @@ public class WebSocketConnection : MonoBehaviour {
     return clientIdExists && clientSecretExists && headsetExists;
   }
 
-  bool ShouldSearchForExistingSession()
+  bool ShouldActivateSession()
   {
     bool sessionIdExists = this.sessionId.Length > 0;
     bool cortexTokenExists = this.cortexToken.Length > 0;
