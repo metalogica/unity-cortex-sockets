@@ -1,12 +1,13 @@
+using System.Collections.Generic;
 using UnityEngine;
 using NativeWebSocket;
 
 public enum SessionState
 {
   Inactive,
-  AuthorizionTokenReceived,
+  AuthorizationTokenReceived,
   Activated,
-  StreamingMentalCommand,
+  Error,
 }
 
 public class WebSocketConnection : MonoBehaviour {
@@ -42,6 +43,8 @@ public class WebSocketConnection : MonoBehaviour {
         )
       ).SaveToString();
 
+       Debug.Log("[Websocket.OnStart] Constructed Message: " + message);
+
       await websocket.SendText(message);
     };
 
@@ -52,6 +55,8 @@ public class WebSocketConnection : MonoBehaviour {
         + "URL: " + this.cortexServerUrl + " " 
         + "Error: " + error
       );
+
+      this.sessionState = SessionState.Error;
     };
 
     websocket.OnClose += (e) =>
@@ -59,30 +64,68 @@ public class WebSocketConnection : MonoBehaviour {
       Debug.Log("Connection closed!");
     };
 
-    websocket.OnMessage += (bytes) => 
+    websocket.OnMessage += async (bytes) => 
     {
-      var input = System.Text.Encoding.UTF8.GetString(bytes);
-      Debug.Log("[Websocket.OnMessage] Recieved raw input" + input);
+      var response = System.Text.Encoding.UTF8.GetString(bytes);
+      Debug.Log("[Websocket.OnMessage] Recieved raw input" + response);
 
       if (this.sessionState == SessionState.Inactive)
       {
-        this.sessionState = SessionState.AuthorizionTokenReceived;
+        this.cortexToken = this.cortexToken = JsonUtility.FromJson<Response.ReceivedAuthorizationToken>(response)
+          .result
+          .cortexToken;
 
-        string message = new Request.QuerySession(
-          RequestMethods.QuerySession,
-          new Request.QuerySession.Params(
-            this.cortexToken
+        string message = new Request.CreateSession(
+          RequestMethods.CreateSession,
+          new Request.CreateSession.Params(
+            this.cortexToken,
+            this.headset,
+            "active"
           )
         ).SaveToString();
 
         Debug.Log("[Websocket.OnMessage] Constructed Message: " + message);
 
+        await websocket.SendText(message);
+        
+        this.sessionState = SessionState.AuthorizationTokenReceived;
+
         return;
       }
 
-      if (ShouldActivateSession())
+      if (this.sessionState == SessionState.AuthorizationTokenReceived)
       {
-        // 
+        this.sessionId = JsonUtility.FromJson<Response.ReceivedSessionId>(response)
+          .result
+          .id;
+        Debug.Log("SESSION ID " + sessionId);
+
+        string message = new Request.StreamMentalCommand(
+          RequestMethods.StreamMentalCommand,
+          new Request.StreamMentalCommand.Params(
+            this.cortexToken,
+            this.sessionId,
+            new List<string> { "com" }
+          )
+        ).SaveToString();
+        
+        Debug.Log("[Websocket.OnMessage] Constructed Message: " + message);
+
+        await websocket.SendText(message);
+
+        this.sessionState = SessionState.Activated;
+
+        return;
+      }
+
+      if (this.sessionState == SessionState.Activated)
+      {
+        MentalCommand command = JsonUtility.FromJson<MentalCommand>(response);
+
+        string type = command.com[0].name;
+        float magnitude = command.com[1].magnitude;
+
+        Debug.Log("[Websocket.OnMessage] Received Mental Command " + type);
       }
     };
     
